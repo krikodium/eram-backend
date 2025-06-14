@@ -2,12 +2,15 @@ const { Pool } = require('pg');
 require('dotenv').config();
 
 const pool = new Pool({
-  user: process.env.DB_USER,      // eramdb_user ✔
-  host: process.env.DB_HOST,      // dpg-…render.com ✔
-  database: process.env.DB_NAME,  // debería ser eramdb, NO eramdb_user
+  connectionString: process.env.DATABASE_URL || undefined,
+  user: process.env.DB_USER,
+  host: process.env.DB_HOST,
+  database: process.env.DB_DATABASE,
   password: process.env.DB_PASSWORD,
   port: process.env.DB_PORT,
-  ssl: { rejectUnauthorized: false },
+  ssl: {
+    rejectUnauthorized: false
+  }
 });
 
 module.exports = pool;

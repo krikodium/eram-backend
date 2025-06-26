@@ -2,7 +2,10 @@
 const express = require('express');
 const router = express.Router();
 const { body, param, validationResult } = require('express-validator'); // <-- 1. Importar 'param'
-const { getAllProducts, getProductById } = require('../controllers/productController');
+const { getAllProducts, getProductById, getProductosInicio } = require('../controllers/productController');
+
+// Nueva ruta para productos destacados aleatorios por categoría
+router.get('/inicio', getProductosInicio);
 
 // La ruta para obtener todos los productos no cambia
 router.get('/', getAllProducts);

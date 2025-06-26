@@ -79,7 +79,41 @@ const getProductById = async (req, res) => {
   }
 };
 
+// NUEVA FUNCIÓN: Productos destacados de inicio (5 aleatorios de 5 categorías)
+const getProductosInicio = async (req, res) => {
+  try {
+    const categoriasQuery = `
+      SELECT DISTINCT categoria_id 
+      FROM productos 
+      ORDER BY RANDOM() 
+      LIMIT 5
+    `;
+    const categoriasResult = await pool.query(categoriasQuery);
+    const categorias = categoriasResult.rows.map(row => row.categoria_id);
+
+    const productos = [];
+    for (const categoriaId of categorias) {
+      const productoQuery = `
+        SELECT * FROM productos 
+        WHERE categoria_id = $1 
+        ORDER BY RANDOM() 
+        LIMIT 1
+      `;
+      const productoResult = await pool.query(productoQuery, [categoriaId]);
+      if (productoResult.rows.length > 0) {
+        productos.push(productoResult.rows[0]);
+      }
+    }
+
+    return res.json(productos);
+  } catch (error) {
+    console.error("Error al obtener productos de inicio:", error);
+    return res.status(500).json({ error: "Error interno del servidor" });
+  }
+};
 module.exports = {
   getAllProducts,
   getProductById,
+  getProductosInicio,
 };
+

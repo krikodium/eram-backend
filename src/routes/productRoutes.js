@@ -1,25 +1,24 @@
-// src/routes/productRoutes.js (VERSIÓN FINAL CORREGIDA)
+// src/routes/productRoutes.js (CORREGIDO)
 const express = require('express');
 const router = express.Router();
 const { param } = require('express-validator');
 
-// Importamos solo las funciones que existen y están exportadas
 const {
   getProductosDestacados,
   getProductosPorSubcategorias,
   getProductById
 } = require('../controllers/productController');
 
-// Ruta para la vista inicial del catálogo (sin filtros)
+// Para la vista inicial del catálogo
 router.get('/destacados', getProductosDestacados);
 
-// Ruta para cuando se selecciona una categoría (con filtro)
+// Para cuando se filtra por categoría
 router.get('/por-subcategorias', getProductosPorSubcategorias);
 
-// Ruta para ver el detalle de un solo producto
+// Para el detalle de un producto
 router.get(
   '/:id',
-  param('id').isInt({ min: 1 }).withMessage('El ID debe ser un número entero positivo'),
+  param('id').isInt({ min: 1 }),
   getProductById
 );
 

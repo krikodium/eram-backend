@@ -1,28 +1,22 @@
-// src/routes/productRoutes.js
+// src/routes/productRoutes.js (VERSIÓN FINAL CORREGIDA)
 const express = require('express');
 const router = express.Router();
 const { param } = require('express-validator');
+
+// Importamos solo las funciones que existen y están exportadas
 const {
-  getAllProducts,
-  getProductById,
-  getProductosInicio,
   getProductosDestacados,
-  getProductosPorSubcategorias
+  getProductosPorSubcategorias,
+  getProductById
 } = require('../controllers/productController');
 
-// Ruta para obtener productos aleatorios para el home (1 producto x 5 categorías)
-router.get('/inicio', getProductosInicio);
-
-// Ruta para obtener productos destacados (5 categorías con 15 productos c/u)
+// Ruta para la vista inicial del catálogo (sin filtros)
 router.get('/destacados', getProductosDestacados);
 
-// Ruta para obtener productos agrupados por subcategoría
+// Ruta para cuando se selecciona una categoría (con filtro)
 router.get('/por-subcategorias', getProductosPorSubcategorias);
 
-// Ruta para obtener todos los productos o filtrado por categoría
-router.get('/', getAllProducts);
-
-// Ruta para obtener producto por ID con validación
+// Ruta para ver el detalle de un solo producto
 router.get(
   '/:id',
   param('id').isInt({ min: 1 }).withMessage('El ID debe ser un número entero positivo'),

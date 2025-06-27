@@ -1,41 +1,25 @@
-// src/controllers/productController.js (Versión con Depuración)
+// src/controllers/productController.js
 const pool = require('../config/db');
 const { validationResult } = require('express-validator');
 
 // Obtener todos los productos (con o sin filtro de categoría)
 const getAllProducts = async (req, res) => {
-  console.log("--- [1] Petición recibida en getAllProducts ---");
   const { categoria } = req.query;
 
   try {
-    // SIN filtro de categoría
     if (!categoria) {
-      console.log("--- [2] No se detectó filtro. Preparando consulta para todos los productos. ---");
       const queryText = 'SELECT * FROM productos ORDER BY nombre ASC';
-
-      console.log("--- [3] Ejecutando consulta a la base de datos... ---");
       const { rows } = await pool.query(queryText);
-
-      console.log(`--- [4] ¡Consulta exitosa! Se encontraron ${rows.length} productos. ---`);
-      console.log("--- [5] Enviando respuesta al navegador... ---");
-
       return res.json(rows);
     }
 
-    // CON filtro de categoría
-    console.log(`--- [A] Se detectó filtro para categoría: ${categoria}. ---`);
     const categoryQuery = `
       SELECT id FROM categorias 
       WHERE id = $1 OR categoria_padre_id = $1
     `;
-
-    console.log("--- [B] Buscando IDs de categoría y sub-categorías... ---");
     const categoryResult = await pool.query(categoryQuery, [categoria]);
 
-    if (categoryResult.rowCount === 0) {
-      console.log("--- La categoría solicitada no existe. Devolviendo lista vacía. ---");
-      return res.json([]);
-    }
+    if (categoryResult.rowCount === 0) return res.json([]);
 
     const categoryIds = categoryResult.rows.map(row => row.id);
 
@@ -44,15 +28,10 @@ const getAllProducts = async (req, res) => {
       WHERE categoria_id = ANY($1::bigint[]) 
       ORDER BY nombre ASC
     `;
-
-    console.log("--- [C] Ejecutando consulta de productos filtrada... ---");
     const { rows } = await pool.query(productQuery, [categoryIds]);
-
-    console.log(`--- [D] ¡Consulta filtrada exitosa! Se encontraron ${rows.length} productos. ---`);
     return res.json(rows);
-
   } catch (error) {
-    console.error("--- ¡ERROR! Ocurrió una excepción en getAllProducts:", error);
+    console.error("Error en getAllProducts:", error);
     return res.status(500).json({ error: 'Error interno del servidor' });
   }
 };
@@ -67,11 +46,7 @@ const getProductById = async (req, res) => {
   try {
     const { id } = req.params;
     const { rows, rowCount } = await pool.query('SELECT * FROM productos WHERE id = $1', [id]);
-
-    if (rowCount === 0) {
-      return res.status(404).json({ error: 'Producto no encontrado' });
-    }
-
+    if (rowCount === 0) return res.status(404).json({ error: 'Producto no encontrado' });
     res.json(rows[0]);
   } catch (error) {
     console.error(`Error en getProductById con id ${req.params.id}:`, error);
@@ -79,7 +54,7 @@ const getProductById = async (req, res) => {
   }
 };
 
-// NUEVA FUNCIÓN: Productos destacados de inicio (5 aleatorios de 5 categorías)
+// Productos destacados de inicio (5 categorías, 1 producto c/u)
 const getProductosInicio = async (req, res) => {
   try {
     const categoriasQuery = `
@@ -111,9 +86,96 @@ const getProductosInicio = async (req, res) => {
     return res.status(500).json({ error: "Error interno del servidor" });
   }
 };
+
+// Productos destacados: 5 categorías con 15 productos cada una
+const getProductosDestacados = async (req, res) => {
+  try {
+    const categoriasQuery = `
+      SELECT id, nombre FROM categorias 
+      WHERE categoria_padre_id IS NULL 
+      ORDER BY RANDOM() 
+      LIMIT 5
+    `;
+    const categoriasResult = await pool.query(categoriasQuery);
+
+    const resultado = [];
+    for (const categoria of categoriasResult.rows) {
+      const productosQuery = `
+        SELECT * FROM productos 
+        WHERE categoria_id = $1 
+        ORDER BY RANDOM() 
+        LIMIT 15
+      `;
+      const productosResult = await pool.query(productosQuery, [categoria.id]);
+      resultado.push({
+        categoria_id: categoria.id,
+        categoria_nombre: categoria.nombre,
+        productos: productosResult.rows
+      });
+    }
+
+    return res.json(resultado);
+  } catch (error) {
+    console.error("Error en getProductosDestacados:", error);
+    return res.status(500).json({ error: "Error interno del servidor" });
+  }
+};
+
+// 🔥 Nuevo: productos agrupados por subcategoría para una categoría padre
+const getProductosPorSubcategorias = async (req, res) => {
+  const { categoria_id } = req.query;
+
+  try {
+    // Buscar subcategorías de la categoría padre
+    const subcategoriasQuery = `
+      SELECT id, nombre FROM categorias 
+      WHERE categoria_padre_id = $1
+    `;
+    const subcategoriasResult = await pool.query(subcategoriasQuery, [categoria_id]);
+
+    if (subcategoriasResult.rows.length === 0) {
+      // Si no tiene subcategorías, devolver productos de esa categoría
+      const productosQuery = `
+        SELECT * FROM productos 
+        WHERE categoria_id = $1 
+        ORDER BY nombre ASC
+      `;
+      const productosResult = await pool.query(productosQuery, [categoria_id]);
+      return res.json([{
+        subcategoria_id: categoria_id,
+        subcategoria_nombre: "Productos",
+        productos: productosResult.rows
+      }]);
+    }
+
+    const resultado = [];
+
+    for (const sub of subcategoriasResult.rows) {
+      const productosQuery = `
+        SELECT * FROM productos 
+        WHERE categoria_id = $1 
+        ORDER BY nombre ASC 
+        LIMIT 15
+      `;
+      const productosResult = await pool.query(productosQuery, [sub.id]);
+      resultado.push({
+        subcategoria_id: sub.id,
+        subcategoria_nombre: sub.nombre,
+        productos: productosResult.rows
+      });
+    }
+
+    return res.json(resultado);
+  } catch (error) {
+    console.error("Error en getProductosPorSubcategorias:", error);
+    return res.status(500).json({ error: "Error interno del servidor" });
+  }
+};
+
 module.exports = {
   getAllProducts,
   getProductById,
   getProductosInicio,
+  getProductosDestacados,
+  getProductosPorSubcategorias,
 };
-

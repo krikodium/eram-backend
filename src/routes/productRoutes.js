@@ -1,20 +1,32 @@
 // src/routes/productRoutes.js
 const express = require('express');
 const router = express.Router();
-const { body, param, validationResult } = require('express-validator'); // <-- 1. Importar 'param'
-const { getAllProducts, getProductById, getProductosInicio } = require('../controllers/productController');
+const { param } = require('express-validator');
+const {
+  getAllProducts,
+  getProductById,
+  getProductosInicio,
+  getProductosDestacados,
+  getProductosPorSubcategorias
+} = require('../controllers/productController');
 
-// Nueva ruta para productos destacados aleatorios por categoría
+// Ruta para obtener productos aleatorios para el home (1 producto x 5 categorías)
 router.get('/inicio', getProductosInicio);
 
-// La ruta para obtener todos los productos no cambia
+// Ruta para obtener productos destacados (5 categorías con 15 productos c/u)
+router.get('/destacados', getProductosDestacados);
+
+// Ruta para obtener productos agrupados por subcategoría
+router.get('/por-subcategorias', getProductosPorSubcategorias);
+
+// Ruta para obtener todos los productos o filtrado por categoría
 router.get('/', getAllProducts);
 
-// --- RUTA MODIFICADA ---
-// Ahora, antes de llamar a getProductById, le pedimos que valide el parámetro 'id'
-router.get('/:id', 
-    param('id').isInt({ min: 1 }).withMessage('El ID debe ser un número entero positivo'), // <-- 2. Añadir la regla de validación
-    getProductById
+// Ruta para obtener producto por ID con validación
+router.get(
+  '/:id',
+  param('id').isInt({ min: 1 }).withMessage('El ID debe ser un número entero positivo'),
+  getProductById
 );
 
 module.exports = router;

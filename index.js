@@ -1,33 +1,35 @@
-// src/index.js (Versión Corregida y Completa)
+// index.js (VERSIÓN CORREGIDA)
 
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 require('dotenv').config();
 
-// Importamos nuestras rutas
-const productRoutes = require('./src/routes/productRoutes');
-const categoryRoutes = require('./src/routes/categoryRoutes');
+// --- CORRECCIÓN EN LAS RUTAS DE IMPORTACIÓN ---
+// Ahora apuntan correctamente a la carpeta 'src' que está en el mismo nivel.
+const productRoutes = require('./src/routes/productRoutes.js');
+const categoryRoutes = require('./src/routes/categoryRoutes.js');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+// Render asigna el puerto dinámicamente, por eso es crucial usar process.env.PORT
+const PORT = process.env.PORT || 3001; 
 
-// Middlewares
+// Middlewares de seguridad y configuración
 app.use(helmet());
 app.use(cors());
 app.use(express.json());
 
-// --- RUTA DE BIENVENIDA (LA QUE FALTABA) ---
-// Esto le dice al servidor qué hacer cuando alguien visita la raíz '/'
+// Ruta de bienvenida para verificar que el servidor está online
 app.get('/', (req, res) => {
-res.send('¡El servidor del backend de ERAM está funcionando correctamente\!');
+  res.send('¡El servidor del backend de ERAM está funcionando correctamente!');
 });
 
-// Usar las rutas de la API
+// --- REGISTRO DE LAS RUTAS DE LA API ---
+// Esto no cambia, pero ahora las variables 'productRoutes' y 'categoryRoutes' sí contienen los archivos correctos.
 app.use('/api/productos', productRoutes);
 app.use('/api/categorias', categoryRoutes);
 
 // Iniciar el servidor
 app.listen(PORT, () => {
-console.log(`Servidor escuchando en el puerto ${PORT}`);
+  console.log(`Servidor escuchando en el puerto ${PORT}`);
 });

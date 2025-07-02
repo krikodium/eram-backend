@@ -1,8 +1,8 @@
-// src/controllers/productController.js (CORREGIDO)
+// src/controllers/productController.js
 const pool = require('../config/db');
 const { validationResult } = require('express-validator');
 
-// --- NUEVA FUNCIÓN PARA OBTENER TODOS LOS PRODUCTOS CON PAGINACIÓN ---
+// --- OBTENER TODOS LOS PRODUCTOS CON PAGINACIÓN ---
 const getAllProducts = async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
@@ -29,6 +29,7 @@ const getAllProducts = async (req, res) => {
   }
 };
 
+// --- OBTENER DETALLE DE PRODUCTO ---
 const getProductById = async (req, res) => {
   const { id } = req.params;
 
@@ -47,6 +48,7 @@ const getProductById = async (req, res) => {
   }
 };
 
+// --- PRODUCTOS DESTACADOS ---
 const getProductosDestacados = async (req, res) => {
   try {
     const query = `
@@ -62,6 +64,7 @@ const getProductosDestacados = async (req, res) => {
   }
 };
 
+// --- PRODUCTOS POR SUBCATEGORÍAS (CORREGIDO) ---
 const getProductosPorSubcategorias = async (req, res) => {
   const { categoria_id } = req.query;
 
@@ -76,6 +79,10 @@ const getProductosPorSubcategorias = async (req, res) => {
       WHERE categoria_id = $1
     `;
     const { rows: subcategorias } = await pool.query(subcategoriasQuery, [categoria_id]);
+
+    if (subcategorias.length === 0) {
+      return res.json([]); // No hay subcategorías → array vacío
+    }
 
     const bloques = [];
 
@@ -102,7 +109,6 @@ const getProductosPorSubcategorias = async (req, res) => {
   }
 };
 
-// --- EXPORTACIÓN DE TODAS LAS FUNCIONES ---
 module.exports = {
   getAllProducts,
   getProductById,

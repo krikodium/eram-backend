@@ -4,30 +4,26 @@ const router = express.Router();
 const { param } = require('express-validator');
 
 const {
-  getAllProducts, // <-- 1. Importar la nueva función
+  getAllProducts,
   getProductosDestacados,
   getProductosPorSubcategorias,
   getProductById
 } = require('../controllers/productController');
 
-// --- 2. AÑADIR LA NUEVA RUTA GENERAL ---
-// Esta ruta se activará con GET /api/productos y usará la paginación
+// --- RUTA: Obtener todos los productos con paginación ---
 router.get('/', getAllProducts);
 
+// --- RUTA: Productos destacados (debe ir antes que /:id) ---
+router.get('/destacados', getProductosDestacados);
 
-
-// Para cuando se filtra por categoría
+// --- RUTA: Productos agrupados por subcategorías ---
 router.get('/por-subcategorias', getProductosPorSubcategorias);
 
-// Para el detalle de un producto
+// --- RUTA: Detalle de producto individual ---
 router.get(
   '/:id',
   param('id').isInt({ min: 1 }),
   getProductById
 );
-
-//productos destacados
-router.get('/destacados', getProductosDestacados);
-
 
 module.exports = router;

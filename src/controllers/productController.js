@@ -48,7 +48,7 @@ const getProductById = async (req, res) => {
   }
 };
 
-// --- PRODUCTOS POR SUBCATEGORÍAS (CORREGIDO) ---
+// --- PRODUCTOS POR SUBCATEGORÍAS ---
 const getProductosPorSubcategorias = async (req, res) => {
   const { categoria_id } = req.query;
 
@@ -65,7 +65,7 @@ const getProductosPorSubcategorias = async (req, res) => {
     const { rows: subcategorias } = await pool.query(subcategoriasQuery, [categoria_id]);
 
     if (subcategorias.length === 0) {
-      return res.json([]); // No hay subcategorías → array vacío
+      return res.json([]);
     }
 
     const bloques = [];
@@ -93,12 +93,14 @@ const getProductosPorSubcategorias = async (req, res) => {
   }
 };
 
-// NUEVA FUNCIÓN: Productos destacados por categoría
+// --- PRODUCTOS DESTACADOS ---
 const getProductosDestacados = async (req, res) => {
   try {
     const queryCategorias = `
-      SELECT id, nombre FROM categorias
-      WHERE categoria_padre_id IS NULL
+      SELECT DISTINCT c.id, c.nombre
+      FROM categorias c
+      JOIN productos p ON p.categoria_id = c.id
+      WHERE p.imagen_portada_url IS NOT NULL
       ORDER BY RANDOM()
       LIMIT 5
     `;
@@ -108,27 +110,30 @@ const getProductosDestacados = async (req, res) => {
 
     for (const cat of categorias) {
       const queryProductos = `
-        SELECT * FROM productos
+        SELECT *
+        FROM productos
         WHERE categoria_id = $1
         AND imagen_portada_url IS NOT NULL
+        ORDER BY RANDOM()
         LIMIT 5
       `;
       const { rows: productos } = await pool.query(queryProductos, [cat.id]);
 
-      resultados.push({
-        categoria_id: cat.id,
-        categoria_nombre: cat.nombre,
-        productos
-      });
+      if (productos.length > 0) {
+        resultados.push({
+          categoria_id: cat.id,
+          categoria_nombre: cat.nombre,
+          productos
+        });
+      }
     }
 
     res.json(resultados);
   } catch (error) {
-    console.error("Error en productos destacados:", error);
+    console.error("Error en getProductosDestacados:", error);
     res.status(500).json({ error: "Error al obtener productos destacados" });
   }
 };
-
 
 module.exports = {
   getAllProducts,

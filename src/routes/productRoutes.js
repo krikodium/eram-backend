@@ -27,4 +27,8 @@ router.get(
   getProductById
 );
 
+//productos destacados
+router.get('/destacados', getProductosDestacados);
+
+
 module.exports = router;

@@ -48,22 +48,6 @@ const getProductById = async (req, res) => {
   }
 };
 
-// --- PRODUCTOS DESTACADOS ---
-const getProductosDestacados = async (req, res) => {
-  try {
-    const query = `
-      SELECT * FROM productos
-      ORDER BY RANDOM()
-      LIMIT 15
-    `;
-    const { rows } = await pool.query(query);
-    res.json(rows);
-  } catch (error) {
-    console.error('Error en getProductosDestacados:', error);
-    res.status(500).json({ error: 'Error interno del servidor' });
-  }
-};
-
 // --- PRODUCTOS POR SUBCATEGORÍAS (CORREGIDO) ---
 const getProductosPorSubcategorias = async (req, res) => {
   const { categoria_id } = req.query;
@@ -108,6 +92,43 @@ const getProductosPorSubcategorias = async (req, res) => {
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 };
+
+// NUEVA FUNCIÓN: Productos destacados por categoría
+const getProductosDestacados = async (req, res) => {
+  try {
+    const queryCategorias = `
+      SELECT id, nombre FROM categorias
+      WHERE categoria_padre_id IS NULL
+      ORDER BY RANDOM()
+      LIMIT 5
+    `;
+    const { rows: categorias } = await pool.query(queryCategorias);
+
+    const resultados = [];
+
+    for (const cat of categorias) {
+      const queryProductos = `
+        SELECT * FROM productos
+        WHERE categoria_id = $1
+        AND imagen_portada_url IS NOT NULL
+        LIMIT 5
+      `;
+      const { rows: productos } = await pool.query(queryProductos, [cat.id]);
+
+      resultados.push({
+        categoria_id: cat.id,
+        categoria_nombre: cat.nombre,
+        productos
+      });
+    }
+
+    res.json(resultados);
+  } catch (error) {
+    console.error("Error en productos destacados:", error);
+    res.status(500).json({ error: "Error al obtener productos destacados" });
+  }
+};
+
 
 module.exports = {
   getAllProducts,

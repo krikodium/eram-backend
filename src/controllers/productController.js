@@ -97,10 +97,8 @@ const getProductosPorSubcategorias = async (req, res) => {
 const getProductosDestacados = async (req, res) => {
   try {
     const queryCategorias = `
-      SELECT DISTINCT c.id, c.nombre
-      FROM categorias c
-      JOIN productos p ON p.categoria_id = c.id
-      WHERE p.imagen_portada_url IS NOT NULL
+      SELECT id, nombre FROM categorias
+      WHERE categoria_padre_id IS NULL
       ORDER BY RANDOM()
       LIMIT 5
     `;
@@ -109,31 +107,37 @@ const getProductosDestacados = async (req, res) => {
     const resultados = [];
 
     for (const cat of categorias) {
+      // 1. Traer las subcategorías de la categoría padre
+      const subcatQuery = `SELECT id FROM subcategorias WHERE categoria_id = $1`;
+      const { rows: subcategorias } = await pool.query(subcatQuery, [cat.id]);
+      const subcatIds = subcategorias.map(s => s.id);
+
+      if (subcatIds.length === 0) continue;
+
+      // 2. Buscar productos que pertenezcan a esas subcategorías
       const queryProductos = `
-        SELECT *
-        FROM productos
-        WHERE categoria_id = $1
+        SELECT * FROM productos
+        WHERE subcategoria_id = ANY($1)
         AND imagen_portada_url IS NOT NULL
         ORDER BY RANDOM()
         LIMIT 5
       `;
-      const { rows: productos } = await pool.query(queryProductos, [cat.id]);
+      const { rows: productos } = await pool.query(queryProductos, [subcatIds]);
 
-      if (productos.length > 0) {
-        resultados.push({
-          categoria_id: cat.id,
-          categoria_nombre: cat.nombre,
-          productos
-        });
-      }
+      resultados.push({
+        categoria_id: cat.id,
+        categoria_nombre: cat.nombre,
+        productos
+      });
     }
 
     res.json(resultados);
   } catch (error) {
-    console.error("Error en getProductosDestacados:", error);
+    console.error("Error en productos destacados:", error);
     res.status(500).json({ error: "Error al obtener productos destacados" });
   }
 };
+
 
 module.exports = {
   getAllProducts,

@@ -14,8 +14,7 @@ const {
 // Esta ruta se activará con GET /api/productos y usará la paginación
 router.get('/', getAllProducts);
 
-// Para la vista inicial del catálogo
-router.get('/destacados', getProductosDestacados);
+
 
 // Para cuando se filtra por categoría
 router.get('/por-subcategorias', getProductosPorSubcategorias);

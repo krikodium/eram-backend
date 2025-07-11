@@ -1,4 +1,4 @@
-// src/controllers/productController.js
+// src/controllers/productController.js (VERSIÓN CON HOTFIX)
 const pool = require('../config/db');
 const { validationResult } = require('express-validator');
 
@@ -48,7 +48,7 @@ const getProductById = async (req, res) => {
   }
 };
 
-// --- PRODUCTOS POR SUBCATEGORÍAS ---
+// --- PRODUCTOS POR SUBCATEGORÍAS --- (Se mantiene por ahora)
 const getProductosPorSubcategorias = async (req, res) => {
   const { categoria_id } = req.query;
 
@@ -88,52 +88,38 @@ const getProductosPorSubcategorias = async (req, res) => {
 
     res.json(bloques);
   } catch (error) {
+    // Este error puede ocurrir en producción si la tabla 'subcategorias' no existe.
+    // El hotfix en getProductosDestacados evita el crash inicial de la página.
     console.error('Error en getProductosPorSubcategorias:', error);
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 };
 
-// --- PRODUCTOS DESTACADOS ---
+// --- PRODUCTOS DESTACADOS (VERSIÓN HOTFIX TEMPORAL) ---
+// Esta versión no depende de subcategorías y funciona sin modificar la base de datos.
 const getProductosDestacados = async (req, res) => {
   try {
-    const queryCategorias = `
-      SELECT id, nombre FROM categorias
-      WHERE categoria_padre_id IS NULL
+    // 1. Obtenemos 12 productos aleatorios que tengan una imagen de portada.
+    const queryProductos = `
+      SELECT * FROM productos
+      WHERE imagen_portada_url IS NOT NULL
       ORDER BY RANDOM()
-      LIMIT 5
+      LIMIT 12
     `;
-    const { rows: categorias } = await pool.query(queryCategorias);
+    const { rows: productos } = await pool.query(queryProductos);
 
-    const resultados = [];
-
-    for (const cat of categorias) {
-      // 1. Traer las subcategorías de la categoría padre
-      const subcatQuery = `SELECT id FROM subcategorias WHERE categoria_id = $1`;
-      const { rows: subcategorias } = await pool.query(subcatQuery, [cat.id]);
-      const subcatIds = subcategorias.map(s => s.id);
-
-      if (subcatIds.length === 0) continue;
-
-      // 2. Buscar productos que pertenezcan a esas subcategorías
-      const queryProductos = `
-        SELECT * FROM productos
-        WHERE subcategoria_id = ANY($1)
-        AND imagen_portada_url IS NOT NULL
-        ORDER BY RANDOM()
-        LIMIT 5
-      `;
-      const { rows: productos } = await pool.query(queryProductos, [subcatIds]);
-
-      resultados.push({
-        categoria_id: cat.id,
-        categoria_nombre: cat.nombre,
-        productos
-      });
-    }
+    // 2. Devolvemos los productos en el formato que el frontend espera.
+    const resultados = [
+      {
+        categoria_id: 'destacados',
+        categoria_nombre: 'Productos Destacados',
+        productos: productos
+      }
+    ];
 
     res.json(resultados);
   } catch (error) {
-    console.error("Error en productos destacados:", error);
+    console.error("Error en productos destacados (hotfix):", error);
     res.status(500).json({ error: "Error al obtener productos destacados" });
   }
 };
